@@ -1,0 +1,23 @@
+{
+  "name": "googlyblox/itchclaim",
+  "description": "Automatically claim free games from itch.io",
+  "version": "1.0.0",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "GooglyBlox",
+      "homepage": "https://github.com/GooglyBlox"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "guzzlehttp/guzzle": "^7.0",
+    "spomky-labs/otphp": "^10.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ItchClaim\\": "ItchClaim/"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+# Composer
+/vendor/
+composer.lock
+
+# PHP Environment
+.env
+.env.local
+.env.*.local
+
+# Session files and credentials
+/sessions/
+/users/
+*-cookies.txt
+*.pem
+*.key
+
+# Log files
+*.log
+*-log.txt
+/logs/
+debug-log.txt
+itchclaim-log.txt
+
+# Generated data files
+/web/
+/web/data/
+/data/
+*.cache
+
+# Sensitive files that might contain credentials
+credentials.php
+config.local.php
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Project-specific files
+itchclaim-cookies.txt
+resume_index.txt
+
+# System files
+.DS_Store
+Thumbs.db
