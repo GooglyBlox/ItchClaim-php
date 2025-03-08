@@ -15,7 +15,7 @@ A PHP port of the [ItchClaim Python library](https://github.com/Smart123s/ItchCl
 ### Basic Usage
 
 ```bash
-php itchclaim.php --login <username> claim
+php itchclaim.php --login <username> --dev claim
 ```
 
 This command logs in the user (asks for password if it's the first time), refreshes the list of currently free games, and claims the unowned ones.
