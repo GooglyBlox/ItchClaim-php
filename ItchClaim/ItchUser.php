@@ -497,16 +497,16 @@ class ItchUser
                 }
             } else {
                 // Not redirected to homepage, likely success
-                // Add game to owned list and verify
-                $this->ownedGames[] = $game;
-
-                // Double-check ownership to be sure
+                // Verify ownership to be sure before adding to owned list
                 if ($this->ownsGameOnline($game)) {
+                    $this->ownedGames[] = $game;
                     echo "Game claimed successfully (ownership verified)\n";
+                    return true;
                 } else {
                     echo "Game claimed but ownership verification failed - please check manually\n";
+                    // Don't add to owned games list if ownership verification fails
+                    return false;
                 }
-                return true;
             }
         } catch (Exception $e) {
             echo "Error claiming game: " . $e->getMessage() . "\n";

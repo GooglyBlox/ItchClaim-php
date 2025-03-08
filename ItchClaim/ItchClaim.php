@@ -88,6 +88,7 @@ class ItchClaim
         $alreadyOwnedCount = 0;
         $errorCount = 0;
         $notClaimableCount = 0;
+        $failedClaimCount = 0;
 
         foreach ($games as $game) {
             echo "Processing game: {$game->getName()} ({$game->getUrl()})\n";
@@ -103,9 +104,13 @@ class ItchClaim
             $claimable = $game->isClaimable();
 
             if ($claimable === true) {
-                $this->user->claimGame($game);
-                $this->user->saveSession();
-                $claimedCount++;
+                $claimResult = $this->user->claimGame($game);
+                if ($claimResult) {
+                    $this->user->saveSession();
+                    $claimedCount++;
+                } else {
+                    $failedClaimCount++;
+                }
             } elseif ($claimable === false) {
                 echo "Game is not claimable\n";
                 $notClaimableCount++;
@@ -121,6 +126,7 @@ class ItchClaim
         echo "- Games claimed: $claimedCount\n";
         echo "- Games already owned: $alreadyOwnedCount\n";
         echo "- Games not claimable: $notClaimableCount\n";
+        echo "- Claim attempts failed: $failedClaimCount\n";
         echo "- Errors encountered: $errorCount\n";
 
         if ($claimedCount === 0) {
