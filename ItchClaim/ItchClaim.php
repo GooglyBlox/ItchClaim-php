@@ -63,13 +63,21 @@ class ItchClaim
      * Claim all unowned games
      *
      * @param string $url URL to download the file from
-     * @return void
+     * @return array Statistics about the claim process
      */
     public function claim($url = 'https://itchclaim.tmbpeter.com/api/active.json')
     {
         if ($this->user === null) {
             echo "You must be logged in\n";
-            return;
+            return [
+                'claimed' => 0,
+                'already_owned' => 0,
+                'errors' => 1,
+                'not_claimable' => 0,
+                'failed_claims' => 0,
+                'total_games' => 0,
+                'claimed_games' => []
+            ];
         }
 
         if (count($this->user->getOwnedGames()) === 0) {
@@ -89,6 +97,7 @@ class ItchClaim
         $errorCount = 0;
         $notClaimableCount = 0;
         $failedClaimCount = 0;
+        $claimedGames = [];
 
         foreach ($games as $game) {
             echo "Processing game: {$game->getName()} ({$game->getUrl()})\n";
@@ -108,6 +117,11 @@ class ItchClaim
                 if ($claimResult) {
                     $this->user->saveSession();
                     $claimedCount++;
+                    $claimedGames[] = [
+                        'id' => $game->getId(),
+                        'name' => $game->getName(),
+                        'url' => $game->getUrl()
+                    ];
                 } else {
                     $failedClaimCount++;
                 }
@@ -132,6 +146,17 @@ class ItchClaim
         if ($claimedCount === 0) {
             echo "No new games can be claimed.\n";
         }
+
+        // Return statistics
+        return [
+            'claimed' => $claimedCount,
+            'already_owned' => $alreadyOwnedCount,
+            'errors' => $errorCount,
+            'not_claimable' => $notClaimableCount,
+            'failed_claims' => $failedClaimCount,
+            'total_games' => count($games),
+            'claimed_games' => $claimedGames
+        ];
     }
 
     /**
