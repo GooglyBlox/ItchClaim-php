@@ -25,7 +25,7 @@ This command logs in the user (asks for password if it's the first time), refres
 If you don't have access to an interactive shell, you can provide your password via command line arguments too:
 
 ```bash
-php itchclaim.php --login <username> --password <password> --totp <2FA code or secret> claim
+php itchclaim.php --login <username> --password <password> --totp <2FA code or secret> --dev claim
 ```
 
 ### Using Environment Variables
