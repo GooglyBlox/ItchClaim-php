@@ -1,5 +1,5 @@
 {
-  "name": "googlyblox/itchclaim",
+  "name": "googlyblox/itchclaim-php",
   "description": "Automatically claim free games from itch.io",
   "version": "1.0.0",
   "type": "project",
