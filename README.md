@@ -118,7 +118,9 @@ The application includes Docker support. Environment variables and volumes are p
 
 ## Legal
 
-This tool is not affiliated with itch.io. Using it may not be allowed, and may result in your account getting suspended or banned. Use at your own risk.
+This tool is not affiliated with itch.io. Using it may not be allowed, and may result in your account getting suspended or banned. Use at your own risk. 
+
+For more information, visit [Smart123s/ItchClaim](https://github.com/Smart123s/ItchClaim) and read the FAQ.
 
 ## License
 
