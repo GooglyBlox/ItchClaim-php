@@ -1,6 +1,6 @@
 # ItchClaim PHP
 
-A PHP port of the ItchClaim Python script for automatically claiming free games from itch.io.
+A PHP port of the [ItchClaim Python library](https://github.com/Smart123s/ItchClaim) for automatically claiming free games from itch.io.
 
 ## Installation
 
@@ -37,9 +37,9 @@ If no credentials are provided via command line arguments, the script checks the
 
 ### Setting Up as a Cron Job
 
-You can set up the script to run automatically as a cron job to claim free games periodically. The repository includes a dedicated script for this purpose.
+You can set up the script to run automatically as a cron job to claim free games periodically:
 
-1. Edit `claim-cron.php` to set your username or ensure the ITCH_USERNAME environment variable is set
+1. Configure your credentials in `claim-cron.php` or set the appropriate environment variables
 2. Add an entry to your crontab (run `crontab -e`):
 
 ```
@@ -52,8 +52,9 @@ You can set up the script to run automatically as a cron job to claim free games
 - `claim`: Claim all unowned free games
 - `refresh_library`: Refresh the list of owned games
 - `refresh_sale_cache`: Refresh the cache about game sales
-- `download_urls`: Get details about a game, including download URLs
+- `download_urls <url>`: Get details about a game, including download URLs
 - `generate_web`: Generate a static website with available games
+- `version`: Display the version of the script and exit
 
 ## Options
 
@@ -67,6 +68,7 @@ You can set up the script to run automatically as a cron job to claim free games
 - `--max_pages <num>`: Maximum number of pages to download
 - `--no_fail`: Continue even if errors occur
 - `--max_not_found_pages <num>`: Maximum consecutive 404 pages before stopping
+- `--dev`: Development mode (disables SSL verification)
 - `--help`: Show help message
 
 ## Advanced Usage
@@ -98,10 +100,21 @@ Generate a list of uploaded files and their download URLs for a game. These link
 ### Generate Static Website
 
 ```bash
-php itchclaim.php generate_web --web_dir web/
+php itchclaim.php --login <username> generate_web --web_dir web/
 ```
 
 Generates a static HTML file containing a table of all the sales cached on the disk.
+
+## Docker Support
+
+The application includes Docker support. Environment variables and volumes are preserved between container restarts.
+
+## Storage Locations
+
+- User sessions and cookies are stored in:
+  - Windows: `%LOCALAPPDATA%\ItchClaim\users\`
+  - Linux/macOS: `$XDG_CONFIG_HOME/itchclaim/users/` or `$HOME/.config/itchclaim/users/`
+- When running in Docker, data is stored in the `/data/` volume
 
 ## Legal
 
