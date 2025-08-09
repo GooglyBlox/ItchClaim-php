@@ -40,6 +40,8 @@ class DiskManager
         while ($page < $start + $maxPages) {
             $page++;
 
+            usleep(500000);
+
             try {
                 $gamesAdded = self::getOneSale($page, false);
 
