@@ -65,7 +65,7 @@ if (empty($options) || isset($options['help'])) {
 }
 
 // Define constants
-define('ITCHCLAIM_VERSION', '1.6.0');
+define('ITCHCLAIM_VERSION', '1.9.2');
 
 // Check for Docker environment
 if (getenv('ITCHCLAIM_DOCKER') !== false) {

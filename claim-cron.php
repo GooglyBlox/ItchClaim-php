@@ -7,7 +7,7 @@
  * @version 1.1
  */
 
-define('ITCHCLAIM_VERSION', '1.6.0');
+define('ITCHCLAIM_VERSION', '1.9.2');
 
 // Include Composer autoloader
 require_once __DIR__ . '/vendor/autoload.php';
