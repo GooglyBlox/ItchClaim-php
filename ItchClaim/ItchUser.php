@@ -50,6 +50,59 @@ class ItchUser
     }
 
     /**
+     * Get CSRF token from cookies
+     *
+     * @return string|null
+     */
+    private function getCsrfTokenFromCookies()
+    {
+        if (!file_exists($this->cookieFile)) {
+            return null;
+        }
+
+        $content = file_get_contents($this->cookieFile);
+        if (preg_match('/itchio_token\s+([^\s]+)/', $content, $matches)) {
+            return urldecode($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Execute cURL request with retry mechanism
+     *
+     * @param resource $ch cURL handle
+     * @param int $maxRetries Maximum number of retries (default: 5)
+     * @param int $backoffFactor Backoff multiplier in seconds (default: 2)
+     * @return string Response content
+     * @throws Exception if all retries fail
+     */
+    private function curlExecWithRetry($ch, $maxRetries = 5, $backoffFactor = 2)
+    {
+        $attempt = 0;
+        $lastError = null;
+
+        while ($attempt <= $maxRetries) {
+            $response = curl_exec($ch);
+
+            if (!curl_errno($ch)) {
+                return $response;
+            }
+
+            $lastError = curl_error($ch);
+            $attempt++;
+
+            if ($attempt <= $maxRetries) {
+                $waitTime = $backoffFactor * $attempt;
+                echo "Request failed (attempt $attempt/$maxRetries): $lastError. Retrying in {$waitTime}s...\n";
+                sleep($waitTime);
+            }
+        }
+
+        throw new Exception("Request failed after $maxRetries retries: $lastError");
+    }
+
+    /**
      * Log in to itch.io
      *
      * @param string|null $password Password
@@ -65,7 +118,7 @@ class ItchUser
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_COOKIEJAR => $this->cookieFile,
             CURLOPT_COOKIEFILE => $this->cookieFile,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 32,
             CURLOPT_USERAGENT => 'ItchClaim PHP ' . ITCHCLAIM_VERSION
         ];
 
@@ -79,18 +132,13 @@ class ItchUser
 
         // Step 1: Visit login page to get CSRF token
         curl_setopt($ch, CURLOPT_URL, 'https://itch.io/login');
-        $response = curl_exec($ch);
+        $this->curlExecWithRetry($ch);
 
-        if (curl_errno($ch)) {
-            throw new Exception("Error accessing login page: " . curl_error($ch));
+        $csrfToken = $this->getCsrfTokenFromCookies();
+
+        if (!$csrfToken) {
+            throw new Exception("Failed to extract CSRF token from cookies");
         }
-
-        // Extract CSRF token
-        if (!preg_match('/<input[^>]*name="csrf_token"[^>]*value="([^"]*)"/', $response, $matches)) {
-            throw new Exception("Failed to extract CSRF token from login page");
-        }
-
-        $csrfToken = $matches[1];
 
         if ($password === null) {
             echo "Enter password for user {$this->username}: ";
@@ -112,11 +160,7 @@ class ItchUser
             ])
         ]);
 
-        $response = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            throw new Exception("Error during login: " . curl_error($ch));
-        }
+        $response = $this->curlExecWithRetry($ch);
 
         $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 
@@ -159,12 +203,7 @@ class ItchUser
                 ])
             ]);
 
-            $response = curl_exec($ch);
-
-            if (curl_errno($ch)) {
-                curl_close($ch);
-                throw new Exception("Error sending TOTP: " . curl_error($ch));
-            }
+            $response = $this->curlExecWithRetry($ch);
 
             // Check for errors
             if (preg_match('/<div class=[\'"]form_errors[\'"].*?<li>(.*?)<\/li>/s', $response, $matches)) {
@@ -189,17 +228,8 @@ class ItchUser
             mkdir($userDir, 0755, true);
         }
 
-        // Get CSRF token from cookies file
-        $csrfToken = null;
-        if (file_exists($this->cookieFile)) {
-            $content = file_get_contents($this->cookieFile);
-            if (preg_match('/itchio_token\s+([^\s]+)/', $content, $matches)) {
-                $csrfToken = urldecode($matches[1]);
-            }
-        }
-
         $data = [
-            'csrf_token' => $csrfToken,
+            'csrf_token' => $this->getCsrfTokenFromCookies(),
             'cookie_file' => $this->cookieFile,
             'owned_games' => array_map(function ($game) {
                 return $game->getId();
@@ -250,7 +280,7 @@ class ItchUser
 
         curl_setopt_array($ch, $curlOptions);
 
-        curl_exec($ch);
+        $this->curlExecWithRetry($ch);
         $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
         curl_close($ch);
@@ -322,13 +352,14 @@ class ItchUser
 
         curl_setopt_array($ch, $curlOptions);
 
-        $response = curl_exec($ch);
-        $success = !curl_errno($ch);
-        curl_close($ch);
-
-        if (!$success) {
+        try {
+            $response = $this->curlExecWithRetry($ch);
+        } catch (Exception $e) {
+            curl_close($ch);
             return false;
         }
+
+        curl_close($ch);
 
         // Check for ownership element on the page
         $hasOwnership = strpos($response, 'ownership_reason') !== false;
@@ -349,13 +380,7 @@ class ItchUser
     {
         try {
             // Get CSRF token from cookies file
-            $csrfToken = null;
-            if (file_exists($this->cookieFile)) {
-                $content = file_get_contents($this->cookieFile);
-                if (preg_match('/itchio_token\s+([^\s]+)/', $content, $matches)) {
-                    $csrfToken = urldecode($matches[1]);
-                }
-            }
+            $csrfToken = $this->getCsrfTokenFromCookies();
 
             if (!$csrfToken) {
                 throw new Exception("No CSRF token found in cookies");
@@ -384,13 +409,7 @@ class ItchUser
 
             curl_setopt_array($ch, $curlOptions);
 
-            $response = curl_exec($ch);
-
-            if (curl_errno($ch)) {
-                curl_close($ch);
-                throw new Exception("Error getting download URL: " . curl_error($ch));
-            }
-
+            $response = $this->curlExecWithRetry($ch);
             $data = json_decode($response, true);
 
             if (isset($data['errors'])) {
@@ -418,12 +437,7 @@ class ItchUser
                 CURLOPT_HTTPHEADER => []
             ]);
 
-            $response = curl_exec($ch);
-
-            if (curl_errno($ch)) {
-                curl_close($ch);
-                throw new Exception("Error accessing download page: " . curl_error($ch));
-            }
+            $response = $this->curlExecWithRetry($ch);
 
             // Step 3: Check if game is claimable
             if (strpos($response, 'claim_to_download_box') === false) {
@@ -473,13 +487,7 @@ class ItchUser
                 CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded']
             ]);
 
-            curl_exec($ch);
-
-            if (curl_errno($ch)) {
-                curl_close($ch);
-                throw new Exception("Error claiming game: " . curl_error($ch));
-            }
-
+            $this->curlExecWithRetry($ch);
             $finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
             curl_close($ch);
 
@@ -541,14 +549,14 @@ class ItchUser
 
         curl_setopt_array($ch, $curlOptions);
 
-        $response = curl_exec($ch);
-        $success = !curl_errno($ch);
-        curl_close($ch);
-
-        if (!$success) {
+        try {
+            $response = $this->curlExecWithRetry($ch);
+        } catch (Exception $e) {
+            curl_close($ch);
             return [];
         }
 
+        curl_close($ch);
         $data = json_decode($response, true);
 
         if (!isset($data['content'])) {
@@ -634,7 +642,7 @@ class ItchUser
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_COOKIEJAR => $this->cookieFile,
             CURLOPT_COOKIEFILE => $this->cookieFile,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 32,
             CURLOPT_USERAGENT => 'ItchClaim PHP ' . ITCHCLAIM_VERSION
         ];
 
